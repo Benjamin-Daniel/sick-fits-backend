@@ -1,5 +1,5 @@
 # source: https://eu1.prisma.sh/benjamin-daniel/siccck-fits/dev
-# timestamp: Sun Dec 09 2018 11:27:59 GMT+0100 (West Africa Standard Time)
+# timestamp: Sun Dec 09 2018 19:45:50 GMT+0100 (West Africa Standard Time)
 
 type AggregateItem {
   count: Int!
@@ -858,4 +858,5 @@ input UserWhereInput {
 
 input UserWhereUniqueInput {
   id: ID
+  email: String
 }

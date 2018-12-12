@@ -2,11 +2,12 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { randomBytes } = require('crypto');
 const { promisify } = require('util');
-const {transport, makeANiceEmail} = require('../mail');
+const { transport, makeANiceEmail } = require('../mail');
+const { hasPermission } = require('../utils');
 
 const Mutations = {
     async createItem(parent, args, ctx, info) {
-        if(!ctx.request.userId) {
+        if (!ctx.request.userId) {
             throw new Error('You need to be signed in to do that!');
         }
         // TODO check if they are logged in
@@ -38,8 +39,15 @@ const Mutations = {
     async deleteItem(parent, args, ctx, info) {
         const where = { id: args.id }
         // find the item
-        const item = await ctx.db.query.item({ where }, `{ id title }`)
+        const item = await ctx.db.query.item({ where }, `{ id title user { id } }`)
         // check if they own that item 
+        const ownsItem = item.user.id === ctx.request.userId;
+        const hasPermission = ctx.request.user.permissions.some(permission => {
+            ['ADMIN', 'ITEMDELETE'].includes(permission);
+        });
+        if (!ownsItem && !hasPermission) {
+            throw new Error("You don't have permission to do that!")
+        }
         // delete it
         return ctx.db.mutation.deleteItem({ where }, info);
     },
@@ -101,8 +109,8 @@ const Mutations = {
         const resetToken = (await promisify(randomBytes)(20)).toString('hex');
         const resetTokenExpiry = Date.now() + 3600000;
         const res = await ctx.db.mutation.updateUser({
-            where: {email: args.email},
-            data: {resetToken: resetToken, resetTokenExpiry: resetTokenExpiry}
+            where: { email: args.email },
+            data: { resetToken: resetToken, resetTokenExpiry: resetTokenExpiry }
         });
         // 3. email them that reset token
         const mailRes = await transport.sendMail({
@@ -112,12 +120,12 @@ const Mutations = {
             html: makeANiceEmail(`Your password Reset Token is here! 
             \n\n
             <a href="${process.env.
-                FRONTEND_URL}/reset?resetToken=${resetToken}">
+                    FRONTEND_URL}/reset?resetToken=${resetToken}">
                 Click Here to reset
             </a>`)
         });
         // 4. return the message
-        return {message: "Thanks!"}
+        return { message: "Thanks!" }
     },
     async resetPassword(parent, args, ctx, info) {
         // 1. Check if the password match
@@ -139,7 +147,7 @@ const Mutations = {
         const password = await bcrypt.hash(args.password, 10);
         // 5. save the new password to the user and remove old resetToken fields
         const updatedUser = await ctx.db.mutation.updateUser({
-            where: {email: user.email},
+            where: { email: user.email },
             data: {
                 password,
                 resetToken: null,
@@ -147,7 +155,7 @@ const Mutations = {
             }
         });
         // 6. Generate jwt
-        const token = jwt.sign({userId: updatedUser.id},process.env.APP_SECRET);
+        const token = jwt.sign({ userId: updatedUser.id }, process.env.APP_SECRET);
         // 7. set the jwt cookie
         ctx.response.cookie('token', token, {
             httpOnly: true,
@@ -157,7 +165,31 @@ const Mutations = {
         return updatedUser;
 
     },
-
+    async updatePermissions(parent, args, ctx, info) {
+        // 1. check if they are logged in
+        if (!ctx.request.userId) {
+            throw new Error('You must be logged in');
+        }
+        // 2. Query the current user
+        const currentUser = await ctx.db.query.user({
+            where: {
+                id: ctx.request.userId
+            }
+        }, info);
+        // 3. Check if they have the permissions to do this
+        hasPermission(currentUser, ['ADMIN', 'PERMISSIONUPDATE']);
+        // 4. Update the permissions
+        return ctx.db.mutation.updateUser({
+            data: {
+                permissions: {
+                    set: args.permissions,
+                }
+            },
+            where: {
+                id: args.userId
+            },
+        }, info)
+    },
 };
 
 module.exports = Mutations;

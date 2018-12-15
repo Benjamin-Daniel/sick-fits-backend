@@ -6,7 +6,7 @@ type SuccessMessage {
 
 type Mutation {
     createItem(title: String, description: String, price: Int,
-     image: String, largeImage: String): Item!
+    image: String, largeImage: String): Item!
     updateItem(id: ID!, title: String, description: String, 
     price: Int): Item!
     deleteItem(id: ID!): Item
@@ -17,6 +17,8 @@ type Mutation {
     resetPassword(resetToken: String!, password: String!, confirmPassword: String!): User!
     updatePermissions(permissions: [Permission], userId: ID!): User
     addToCart(id: ID!): CartItem
+    removeFromCart(id: ID!): CartItem
+    createOrder(token: String!): Order!
 }
 
 type Query {
@@ -25,6 +27,7 @@ type Query {
     itemsConnection(where: ItemWhereInput): ItemConnection!
     me: User
     users: [User]!
+    order(id: ID!): Order
 }
 
 type User {

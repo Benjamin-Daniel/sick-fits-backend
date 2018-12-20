@@ -1,0 +1,12 @@
+{
+  "name": "Sickfits-prod",
+  "version": 1,
+  "env": {
+    "NODE_ENV": "production"
+  },
+  "type": "npm",
+  "engines": {
+    "node": "10.11.0",
+    "npm": "6.5.0"
+  }
+}

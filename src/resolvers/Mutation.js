@@ -69,9 +69,9 @@ const Mutations = {
         //lowercase their email
         args.email = args.email.toLowerCase();
         // check characters 
-        checkCharacters(args.name, 6, 15, 'name')
-        checkCharacters(args.email, 6, 15, 'email')
-        checkCharacters(args.password, 6, 15, 'password')
+        checkCharacters(args.name, 6, 50, 'name')
+        checkCharacters(args.email, 6, 200, 'email')
+        checkCharacters(args.password, 6, 30, 'password')
         // hash their password
         const password = await bcrypt.hash(args.password, 10);
         // create user in the database
@@ -98,8 +98,8 @@ const Mutations = {
         if (!user) {
             throw new Error(`No user with such found for user ${email}`);
         }
-        checkCharacters(email, 6, 15, 'email')
-        checkCharacters(password, 6, 15, 'password')
+        checkCharacters(email, 6, 200, 'email')
+        checkCharacters(password, 6, 30, 'password')
         // 2. check if their password is correct
         const valid = await bcrypt.compare(password, user.password);
         if (!valid) {
@@ -125,7 +125,7 @@ const Mutations = {
         if (!user) {
             throw new Error(`No user with such found for user ${args.email}`);
         }
-        checkCharacters(args.email, 6, 15, 'email')
+        checkCharacters(args.email, 6, 200, 'email')
         // 2. set a reset token on that user
         const resetToken = (await promisify(randomBytes)(20)).toString('hex');
         const resetTokenExpiry = Date.now() + 3600000;

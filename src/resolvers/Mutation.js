@@ -26,7 +26,20 @@ const Mutations = {
         return item;
     },
     async updateItem(parent, args, ctx, info) {
-        // frist take a copy of the updates 
+        // validate
+        const { userId } = ctx.request;
+        if (!userId) throw new Error('You must be signed in to complete this order.');
+        const where = { id: args.id};
+        const item = await ctx.db.query.item({ where }, `{ id title user { id } }`)
+        // check if they own that item 
+        const ownsItem = item.user.id === ctx.request.userId;
+        const hasPermission = ctx.request.user.permissions.some(permission => {
+            ['ADMIN', 'ITEMUPDATE'].includes(permission);
+        });
+        if (!ownsItem && !hasPermission) {
+            throw new Error("You don't have permission to do that!")
+        }
+        // first take a copy of the updates 
         const updates = { ...args };
         // remove the id from the updates
         delete updates.id;

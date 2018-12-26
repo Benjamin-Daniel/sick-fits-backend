@@ -14,4 +14,15 @@ function hasPermission(user, permissionsNeeded) {
   }
 }
 
+function checkCharacters(value, min, max, toCheck) {
+  min = min || 5;
+  max = max || 15;
+  if (value.length <= min) {
+    throw new Error(`Your ${toCheck} should have a minimum of ${min} characters.`)
+  }
+  if (value.length >= max) {
+    throw new Error(`Your ${toCheck} should have a maximum of ${max} characters.`)
+  }
+}
 exports.hasPermission = hasPermission;
+exports.checkCharacters = checkCharacters;
